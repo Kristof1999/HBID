@@ -27,13 +27,13 @@ def reg_sum_helper(shape, device):
     dy = torch.tensor([[-1, 0], [1, 0]], device=device)
     dx = TF.center_crop(dx, (shape[-2], shape[-1]))
     dy = TF.center_crop(dy, (shape[-2], shape[-1]))
-    Fdx = torch.fft.fft2(dx)
-    Fdy = torch.fft.fft2(dy)
-    Fdx[0, 0] = max(Fdx[0, 0].abs(), 0.001)
-    Fdy[0, 0] = max(Fdy[0, 0].abs(), 0.001)
-    Fdx = Fdx.abs()**2
-    Fdy = Fdy.abs()**2
-    return (Fdx + Fdy)/2
+    dx_fft = torch.fft.fft2(dx)
+    dy_fft = torch.fft.fft2(dy)
+    dx_fft[0, 0] = max(dx_fft[0, 0].abs(), 0.001)
+    dy_fft[0, 0] = max(dy_fft[0, 0].abs(), 0.001)
+    dx_fft = dx_fft.abs()**2
+    dy_fft = dy_fft.abs()**2
+    return (dx_fft + dy_fft)/2
 
 def reg_loss(out_x, device):
     #return l1l2(out_x)

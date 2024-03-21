@@ -18,8 +18,8 @@ class vp_layer(nn.Module):
         
         denom = noise_level * k_fft_abs + regularizer
         
-        psf_fft_inv = torch.conj(k_fft) / denom
-        x_fft = noise_level * psf_fft_inv * y_fft
+        k_fft_inv = torch.conj(k_fft) / denom
+        x_fft = noise_level * k_fft_inv * y_fft
         
         covariance_fft = 1 / denom
         covariance = torch.fft.ifft2(covariance_fft).real

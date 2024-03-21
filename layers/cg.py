@@ -8,19 +8,19 @@ class vp_layer_conjgrad(nn.Module):
     def __init__(self):
         super().__init__()
     
-    def forward(self, y_pad, y_old_shape, noise_level, regularizer, k):
+    def forward(self, y_pad, y_old_shape, k):
         # Wiener-deconvolution
         y_fft = torch.fft.fft2(y_pad)
         k = TF.center_crop(k, (y_fft.shape[-2], y_fft.shape[-1])) # pad to size
         k = torch.fft.ifftshift(k, dim=(-2, -1))
         k_fft = torch.fft.fft2(k)
         k_fft_abs = torch.abs(k_fft)**2
-        denom = noise_level * k_fft_abs + regularizer
-        Fpinv = torch.conj(k_fft) / denom
-        x_fft = y_fft * Fpinv
+        lambd = 0.025
+        denom = k_fft_abs + lambd
+        k_fft_inv = torch.conj(k_fft) / denom
+        x_fft = y_fft * k_fft_inv
 
         # conjgrad
-        lambd = 0.025
         Ax = x_fft * k_fft * k_fft.conj()
         Ax += lambd*x_fft
         b = y_fft * k_fft.conj()
@@ -30,9 +30,6 @@ class vp_layer_conjgrad(nn.Module):
         x = torch.fft.ifft2(x_fft).abs()
 
         # src: Levin
-        # solve: Tk^T @ Tk @ x = Tk^T @ y, 
-        # where Tk is a Toeplitz matrix, k and y are given.
-        # A = Tk^T @ Tk, b = Tk^T @ y,
         for i in range(50):
             rho = torch.sum(r**2)
             if rho < 1e-15:
@@ -52,4 +49,6 @@ class vp_layer_conjgrad(nn.Module):
             r = r - alpha*q
             rho_1 = rho
         
+        x = TF.center_crop(x, y_old_shape)
+
         return x

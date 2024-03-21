@@ -1,6 +1,5 @@
 # based on SelfDeblur, src: https://github.com/csdwren/SelfDeblur
 
-from __future__ import print_function
 import os
 import torch
 import torch.optim
@@ -9,11 +8,10 @@ from torchvision.io import write_png, read_image, ImageReadMode
 import warnings
 from utils.common_utils import *
 from utils.my_utils import *
-import torchvision.transforms.functional as TF
 import time
 from layers.vp import vp_layer
-from layers.cg import vp_layer_conjgrad
 from layers.rl import vp_layer_RL
+from layers.cg import vp_layer_conjgrad
 from loss.loss_levin_ypred import LevinLossYPred
 import logging
 
@@ -56,24 +54,14 @@ def run_basic():
 
         vp = vp_layer()
         loss_fn = LevinLossYPred()
+        torch.manual_seed(0) # important!
         kernel = nn.Parameter(torch.randn(opt.kernel_size, dtype=torch.float, device=device))
         optimizer = torch.optim.Adam([{'params':kernel}], lr=LR)
 
         pad = opt.kernel_size[-1]//2
         y_old_shape = (y.shape[-2], y.shape[-1])
         y_pad = my_edgetaper(y, pad, device)
-        
-        dx = torch.tensor([[-1, 1], [0, 0]], device=device)
-        dy = torch.tensor([[-1, 0], [1, 0]], device=device)
-        dx = TF.center_crop(dx, (y_pad.shape[-2], y_pad.shape[-1]))
-        dy = TF.center_crop(dy, (y_pad.shape[-2], y_pad.shape[-1]))
-        dx_fft = torch.fft.fft2(dx)
-        dy_fft = torch.fft.fft2(dy)
-        dx_fft[0, 0] = max(dx_fft[0, 0].abs(), 0.001)
-        dy_fft[0, 0] = max(dy_fft[0, 0].abs(), 0.001)
-        dx_fft = dx_fft.abs()**2
-        dy_fft = dy_fft.abs()**2
-        reg_sum = (dx_fft + dy_fft)/2
+        reg_sum = reg_sum_helper(y_pad.shape, device=device)
 
         high = 0.1
         low = 0.001
@@ -101,7 +89,7 @@ def run_basic():
             if (step+1) % print_freq == 0:
                 print(step+1, total_loss.item())
                 logging.info(f"loss: {step+1} - {total_loss.item()}")
-                save_helper(k, f"{local_time.tm_hour}:{local_time.tm_min}_{imgname}_{step}_k.png", save_path)
+                #save_helper(k, f"{local_time.tm_hour}:{local_time.tm_min}_{imgname}_{step}_k.png", save_path)
 
         end = time.time()
         res = end-start
@@ -111,7 +99,7 @@ def run_basic():
         vp_rl = vp_layer_RL()
         vp_cg = vp_layer_conjgrad()
         out_x_rl = vp_rl(y_pad, y_old_shape, k)
-        out_x_cg = vp_cg(y_pad, y_old_shape, noise_level, regularizer, k)
+        out_x_cg = vp_cg(y_pad, y_old_shape, k)
         
         save_helper(k, f"{imgname}_k.png", save_path)
         save_helper(x, f"{imgname}_x.png", save_path)
