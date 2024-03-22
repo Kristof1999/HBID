@@ -96,14 +96,10 @@ def run_basic():
         times.append(res)
         logging.info(f"time: {imgname} - {res}")
 
-        vp_rl = vp_layer_RL()
         vp_cg = vp_layer_conjgrad()
-        out_x_rl = vp_rl(y_pad, y_old_shape, k)
         out_x_cg = vp_cg(y_pad, y_old_shape, k)
         
         save_helper(k, f"{imgname}_k.png", save_path)
-        save_helper(x, f"{imgname}_x.png", save_path)
-        save_helper(out_x_rl, f"{imgname}_x_rl.png", save_path)
         save_helper(out_x_cg, f"{imgname}_x_cg.png", save_path)
 
     times = torch.tensor(times)
