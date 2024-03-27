@@ -10,8 +10,7 @@ from utils.common_utils import *
 from utils.my_utils import *
 import time
 from layers.vp import vp_layer
-from layers.rl import vp_layer_RL
-from layers.cg import vp_layer_conjgrad
+from layers.wiener import wiener_layer
 from loss.loss_levin_ypred import LevinLossYPred
 import logging
 
@@ -96,11 +95,11 @@ def run_basic():
         times.append(res)
         logging.info(f"time: {imgname} - {res}")
 
-        vp_cg = vp_layer_conjgrad()
-        out_x_cg = vp_cg(y_pad, y_old_shape, k)
+        wiener = wiener_layer()
+        out_x = wiener(y_pad, y_old_shape, k)
         
         save_helper(k, f"{imgname}_k.png", save_path)
-        save_helper(out_x_cg, f"{imgname}_x_cg.png", save_path)
+        save_helper(out_x, f"{imgname}_x.png", save_path)
 
     times = torch.tensor(times)
     print("AVG:", times.mean())
