@@ -16,6 +16,18 @@ def derivative(x, alpha):
     x_dy = torch.conv2d(out_x, dy).abs()
     return torch.sum(x_dx**alpha).item() + torch.sum(x_dy**alpha).item()
 
+def my_edgetaper(x, pad, device):
+    x = TF.pad(x, pad, padding_mode='symmetric')
+    w = torch.hamming_window(pad*2).to(device)
+    s = w.shape[0]
+    w_lr = w[:s//2]
+    x[:, :, :, :pad] = x[:, :, :, :pad] * w_lr
+    x[:, :, :, -pad:] = x[:, :, :, -pad:] * w_lr.flip(dims=(0,))
+    w_ud = w_lr[:, None]
+    x[:, :, :pad, :] = x[:, :, :pad, :] * w_ud
+    x[:, :, -pad:, :] = x[:, :, -pad:, :] * w_ud.flip(dims=(0,))
+    return x
+
 im = torch.zeros((150,150), dtype=torch.float)
 im[50:100, 50] = 1
 im[50:100, 100] = 1
@@ -33,16 +45,21 @@ mse = torch.nn.MSELoss()
 ssim = SSIM()
 
 n = n[None, None, :, :]
-blurred_im_fft = torch.fft.fft2(n)
+pad = 3//2
+old_shape = blurred_im.shape
+blurred_im = my_edgetaper(blurred_im, pad, None)
+blurred_im_fft = torch.fft.fft2(blurred_im)
 k = TF.center_crop(k, (blurred_im.shape[-2], blurred_im.shape[-1]))
 k = torch.fft.ifftshift(k)
 k_fft = torch.fft.fft2(k)
 
 def get_im_est(lambd):
     im_est_fft = blurred_im_fft * k_fft.conj() / (k_fft.abs()**2 + lambd)
-    return torch.fft.ifft2(im_est_fft).real
+    return TF.center_crop(torch.fft.ifft2(im_est_fft).abs(), (old_shape[-2], old_shape[-1]))
 
-im_fft = torch.fft.fft2(im)
+im2 = my_edgetaper(im, pad, None)
+im_fft = torch.fft.fft2(im2)
+n = my_edgetaper(n, pad, None)
 n_fft = torch.fft.fft2(n)
 im_est = get_im_est(n_fft.abs()**2 / im_fft.abs()**2)
 mse1 = mse(im_est, im).item()
