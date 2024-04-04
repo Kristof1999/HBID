@@ -6,6 +6,7 @@ import numpy as np
 import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 import argparse
+from torchvision.io import write_png, read_image, ImageReadMode
 
 def parse_helper(name):
     parser = argparse.ArgumentParser()
@@ -37,10 +38,11 @@ def reg_sum_helper(shape, device):
 
 def reg_loss(out_x, device):
     #return l1l2(out_x)
-    #return l1l2_der(out_x, device)
-    return tikhonov(out_x)
+    return l1l2_der(out_x, device)
+    #return tikhonov(out_x)
     #return sobel(out_x, device)
     #return der(out_x, device)
+    #return der_hyper(out_x, device)
 
 def l1l2(out_x):
     return torch.mean(out_x.abs()) / torch.sqrt(torch.mean(out_x.abs()**2))
@@ -68,6 +70,17 @@ def der(out_x, device):
     x_dy = torch.conv2d(out_x, dy).abs()
     return (torch.mean(x_dx**2) + torch.mean(x_dy**2))
 
+def der_hyper(out_x, device):
+    out_x = TF.gaussian_blur(out_x, (3,3), sigma=1)
+    dx = torch.tensor([[-1, 1], [0, 0]], device=device, dtype=torch.float)
+    dy = torch.tensor([[-1, 0], [1, 0]], device=device, dtype=torch.float)
+    dx = dx[None, None, :, :]
+    dy = dy[None, None, :, :]
+    x_dx = torch.conv2d(out_x, dx).abs()
+    x_dy = torch.conv2d(out_x, dy).abs()
+    eps = 1e-5
+    return (torch.mean((x_dx+eps)**0.5) + torch.mean((x_dy+eps)**0.5))
+
 def sobel(out_x, device):
     out_x = TF.gaussian_blur(out_x, (3,3), sigma=1)
     dx = torch.tensor([[1, 0, -1], [2, 0, -2], [1, 0, -1]], device=device, dtype=torch.float)
@@ -81,6 +94,28 @@ def sobel(out_x, device):
 def plot_im_gray(x):
     plt.figure()
     plt.imshow(x.detach().cpu().squeeze(), cmap='gray')
+    plt.show(block=True)
+
+def visualize_kernels(save_path):
+    ims = [1,2,3,4]
+    kernels = [1,2,3,4,5,6,7,8]
+    row_size = 0
+    col_size = 0
+    i = 1
+    for j in kernels:
+        imi_kj = read_image(save_path + f"/im{i}_kernel{j}_img_k.png", ImageReadMode.GRAY)
+        if row_size < imi_kj.shape[-2]:
+            row_size = imi_kj.shape[-2]
+        if col_size < imi_kj.shape[-1]:
+            col_size = imi_kj.shape[-1] 
+    kernels_im = torch.zeros((4*row_size, 8*col_size))
+    for i in ims:
+        for j in kernels:
+            imi_kj = read_image(save_path + f"/im{i}_kernel{j}_img_k.png", ImageReadMode.GRAY)
+            imi_kj = TF.center_crop(imi_kj.squeeze(), (row_size, col_size))
+            kernels_im[(i-1)*row_size:i*row_size, (j-1)*col_size:j*col_size] = imi_kj
+    plt.figure()
+    plt.imshow(kernels_im, cmap='gray')
     plt.show(block=True)
 
 def normalize(x):
