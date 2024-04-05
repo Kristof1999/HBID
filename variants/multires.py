@@ -119,3 +119,6 @@ def run_multires():
         
         save_helper(k, f"{imgname}_k.png", save_path)
         save_helper(out_x, f"{imgname}_x.png", save_path)
+    
+    times = torch.tensor(times)
+    print("AVG:", times.mean())
