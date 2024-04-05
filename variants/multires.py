@@ -59,7 +59,7 @@ def run_multires():
         reg_sum = reg_sum_helper(y_pad.shape, device)
         
         scale_num = 3
-        scale_iter = num_iter//scale_num
+        scale_iter = 2000 #num_iter//scale_num
         ret = torch.tensor([0.5 ** 0.5])
         k1,k2 = opt.kernel_size
         retv = torch.pow(ret, torch.range(0, scale_num))
