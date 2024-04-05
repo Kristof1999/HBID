@@ -12,6 +12,7 @@ from utils.my_utils import *
 import torchvision.transforms.functional as TF
 import time
 from layers.vp import vp_layer
+from layers.wiener import wiener_layer
 from loss.loss_levin_ypred import LevinLossYPred
 import logging
 
@@ -37,6 +38,8 @@ def run_multires():
     save_path = opt.save_path
     os.makedirs(save_path, exist_ok=True)
 
+    times = []
+
     # start #image
     for f in files_source:
         imgname = os.path.basename(f)
@@ -56,7 +59,7 @@ def run_multires():
         reg_sum = reg_sum_helper(y_pad.shape, device)
         
         scale_num = 3
-        scale_iter = num_iter#//scale_num
+        scale_iter = num_iter//scale_num
         ret = torch.tensor([0.5 ** 0.5])
         k1,k2 = opt.kernel_size
         retv = torch.pow(ret, torch.range(0, scale_num))
@@ -66,16 +69,17 @@ def run_multires():
         k2list = torch.ceil(k2*retv)
         k2list = k2list+((k2list % 2)==0)
         k2list = k2list.int().flip(0)
+        torch.manual_seed(0) # important!
         kernel = torch.randn((k1list[0], k2list[0]), device=device, dtype=torch.float)
         kernel = kernel[None, :, :]
         loss_fn = LevinLossYPred()
 
         high = 0.1
         low = 0.001
-        noise_levels = torch.range(high, low, -(high-low)/num_iter)
+        noise_levels = torch.range(high, low, -(high-low)/scale_iter)
         high = 100
         low = 30
-        prior_ivars = torch.range(high, low, -(high-low)/num_iter)
+        prior_ivars = torch.range(high, low, -(high-low)/scale_iter)
         
         start = time.time()
         for scale in range(scale_num+1):
@@ -103,11 +107,15 @@ def run_multires():
                 if (step+1) % print_freq == 0:
                     print(step+1, total_loss.item())
                     logging.info(f"loss: {step+1} - {total_loss.item()}")
-                    save_helper(k, f"{local_time.tm_hour}:{local_time.tm_min}_{imgname}_{scale}_{step}_k.png", save_path)
+                    #save_helper(k, f"{local_time.tm_hour}:{local_time.tm_min}_{imgname}_{scale}_{step}_k.png", save_path)
         
         end = time.time()
         res = end-start
+        times.append(res)
         logging.info(f"time: {imgname} - {res}")
 
+        wiener = wiener_layer()
+        out_x = wiener(y_pad, y_old_shape, k)
+        
         save_helper(k, f"{imgname}_k.png", save_path)
-        save_helper(x, f"{local_time.tm_hour}:{local_time.tm_min}_{imgname}_{step}_{sig_noise}_x.png", save_path)
+        save_helper(out_x, f"{imgname}_x.png", save_path)
