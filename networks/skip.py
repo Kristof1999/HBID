@@ -7,8 +7,7 @@ from .common import *
 #from .non_local_gaussian import NONLocalBlock2D
 from .non_local_dot_product import NONLocalBlock2D
 
-def skip(psf_size, device,
-        num_input_channels=2, num_output_channels=3, 
+def skip(num_input_channels=2, num_output_channels=3, 
         num_channels_down=[16, 32, 64, 128, 128], num_channels_up=[16, 32, 64, 128, 128], num_channels_skip=[4, 4, 4, 4, 4], 
         filter_size_down=3, filter_size_up=3, filter_skip_size=1,
         need_sigmoid=True, need_bias=True, 
@@ -69,8 +68,8 @@ def skip(psf_size, device,
         deeper.add(conv(input_depth, num_channels_down[i], filter_size_down[i], 2, bias=need_bias, pad=pad, downsample_mode=downsample_mode[i]))
         deeper.add(bn(num_channels_down[i]))
         deeper.add(act(act_fun))
-        #if i>1:
-            #deeper.add(NONLocalBlock2D(in_channels=num_channels_down[i]))
+        if i>1:
+            deeper.add(NONLocalBlock2D(in_channels=num_channels_down[i]))
         deeper.add(conv(num_channels_down[i], num_channels_down[i], filter_size_down[i], bias=need_bias, pad=pad))
         deeper.add(bn(num_channels_down[i]))
         deeper.add(act(act_fun))
