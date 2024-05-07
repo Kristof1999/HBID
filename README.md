@@ -11,6 +11,10 @@ You can see the available variants in the variants folder. To run one of them, g
 
 Output will be available in results/levin/{variant name} folder.
 
+## Evaluation
+
+For evaluating the output, go to results/levin, change the variant name in calc_mean.m and then run it.
+
 [^1]: VPNet: Variable Projection Networks, Péter Kovács and Gergő Bognár and Christian Huber and Mario Huemer, 2022
 [^2]: Efficient Marginal Likelihood Optimization in Blind Deconvolution, Anat Levin and Yair Weiss and Fredo Durand and William T. Freeman, 2011
 [^3]: Neural Blind Deconvolution Using Deep Priors, Dongwei Ren and Kai Zhang and Qilong Wang and Qinghua Hu and Wangmeng Zuo, 2020
