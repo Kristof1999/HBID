@@ -5,7 +5,7 @@ The code is based on [SelfDeblur](https://github.com/csdwren/SelfDeblur).
 
 Borrowes ideas from: VPNet [^1], MAPk [^2], and SelfDeblur [^3].
 
-# Running
+## Running
 
 You can see the available variants in the variants folder. To run one of them, go to the experiment.py file and uncomment it, then run the experiment.py script.
 
