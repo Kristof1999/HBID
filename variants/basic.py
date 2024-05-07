@@ -17,6 +17,7 @@ import logging
 def run_basic():
     var_name = 'basic'
     local_time = time.localtime()
+    create_helper(f"results/levin/{var_name}")
     logging.basicConfig(filename=f"results/levin/{var_name}/{var_name}_{local_time.tm_year}:{local_time.tm_mon}:{local_time.tm_mday}:{local_time.tm_hour}:{local_time.tm_min}.txt", level=logging.INFO)
     opt = parse_helper(var_name)
     print_freq = opt.print_frequency

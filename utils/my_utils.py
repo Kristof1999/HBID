@@ -8,6 +8,10 @@ import torch.nn.functional as F
 import argparse
 from torchvision.io import write_png, read_image, ImageReadMode
 
+def create_helper(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 def parse_helper(name):
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_iter', type=int, default=5000, help='number of epochs of training')
