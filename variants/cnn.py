@@ -96,11 +96,10 @@ def run_cnn():
 
             k = torch.softmax(kernel.flatten(), dim=-1).reshape(opt.kernel_size)
             x, covariance, y_estimate = vp(y_pad, y_old_shape, noise_level, regularizer, k)
-            total_loss = loss_fn(y_estimate, y, covariance, k)
-
+            
             x2 = cnn(x)
             y_estimate2 = torch.conv2d(x2, k[None, None, :, :], padding="same")
-            total_loss += mse(y, y_estimate2)
+            total_loss = mse(y, y_estimate2)
             
             total_loss.backward()
             optimizer.step()
