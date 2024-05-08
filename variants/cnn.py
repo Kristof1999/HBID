@@ -96,10 +96,19 @@ def run_cnn():
 
             k = torch.softmax(kernel.flatten(), dim=-1).reshape(opt.kernel_size)
             x, covariance, y_estimate = vp(y_pad, y_old_shape, noise_level, regularizer, k)
+            k = k[None, None, :, :]
+            k_sz1 = k.shape[-2]
+            k_sz2 = k.shape[-1]
+            centered = torch.fft.fftshift(covariance, dim=(-2, -1))
+            ssd2 = TF.center_crop(centered, (k_sz1*2-1, k_sz2*2-1))
+            ssd2 = ssd2.squeeze()
+            ssd2 = ssd2[None, None, :, :]
+            conv2 = torch.nn.functional.conv2d(ssd2, k.rot90(k=2, dims=(-2,-1)))
+            conv2 = torch.nn.functional.conv2d(conv2, k).squeeze()
             
             x2 = cnn(x)
-            y_estimate2 = torch.conv2d(x2, k[None, None, :, :], padding="same")
-            total_loss = mse(y, y_estimate2)
+            y_estimate2 = torch.conv2d(x2, k, padding="same")
+            total_loss = mse(y, y_estimate2) + conv2
             
             total_loss.backward()
             optimizer.step()
